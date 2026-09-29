@@ -1,0 +1,89 @@
+name: Web CI and deployment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Test deployment archive validation and rollback
+        run: python3 -m unittest discover -s tests -p 'deploy_receiver_test.py' -v
+      - run: npm run build
+      - name: Install browser for end-to-end tests
+        run: npx playwright install --with-deps chromium
+      - name: Run the complete quest in a browser
+        shell: bash
+        run: |
+          npm run dev > /tmp/demosha-vite.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:5173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run test:browser
+      - name: Package the static website
+        run: tar -C dist -czf web.tar.gz .
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-build
+          path: web.tar.gz
+          retention-days: 14
+          if-no-files-found: error
+
+  deploy:
+    needs: test-and-build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: production
+      url: https://demosha2026.storkyproduct.ru
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: web-build
+      - name: Deploy using the restricted SSH account
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEMOSHA_DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEMOSHA_DEPLOY_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/demosha_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          trap 'rm -f ~/.ssh/demosha_key' EXIT
+          ssh -i ~/.ssh/demosha_key \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes \
+            -o ConnectTimeout=15 \
+            demosha-deploy@85.193.94.65 "deploy $GITHUB_SHA" < web.tar.gz
+      - name: Verify public HTTPS deployment
+        env:
+          EXPECTED_REVISION: ${{ github.sha }}
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --retry 3 \
+            https://demosha2026.storkyproduct.ru/healthz > health.json
+          python3 -c 'import json, os; assert json.load(open("health.json"))["commit"] == os.environ["EXPECTED_REVISION"]'
+          curl --fail --silent --show-error https://demosha2026.storkyproduct.ru/ > /dev/null

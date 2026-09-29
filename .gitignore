@@ -1,0 +1,9 @@
+node_modules/
+dist/
+release/
+test-results/
+*.log
+quest-progress.json
+build/*.zip
+__pycache__/
+*.pyc

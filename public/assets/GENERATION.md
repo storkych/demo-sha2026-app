@@ -1,0 +1,9 @@
+# Generated background plates
+
+Created with the built-in image generation tool. Original PNG files are included alongside this note.
+
+Shared prompt: Use case: photorealistic-natural. Generate a standalone landscape 16:9 background plate for an aviation mystery point and click game. Cinematic realistic photography, subdued blue charcoal metal, soft warm amber practical lighting, detailed tactile surfaces. Bright enough to identify objects easily. Full bleed image, no interface, no hotspot markers, no circles, no outlines, no captions, no added text, no logos, no people. Camera fixed eye level, atmospheric premium thriller, physically realistic aircraft.
+
+- `cockpit.png`: View inside aircraft cockpit from doorway. EXACT THREE prominent interactive objects well separated: large pilot control yoke in lower left foreground centered at 25% width 70% height, panoramic cockpit window centered at 50% width 28% height, hanging pilot uniform jacket on right wall centered at 83% width 55% height. Jacket fully visible, yoke clearly visible. Instrument panel between.
+- `cabin.png`: Passenger aircraft cabin looking down aisle. EXACT THREE prominent objects well separated: large complete foreground passenger seat on left centered at 25% width 62% height, paper boarding pass on dark tray table foreground right centered at 71% width 77% height, open overhead luggage compartment upper right centered at 75% width 20% height. Clear silhouettes.
+- `baggage.png`: Aircraft luggage hold. EXACT THREE prominent objects: large suitcase with very visible combination padlock foreground left centered at 22% width 65% height; large paper inventory list on clipboard mounted at center wall centered at 51% width 35% height; open suitcase containing folded clothes and travel belongings foreground right centered at 78% width 72% height. Clear separation of subjects.

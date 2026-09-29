@@ -1,0 +1,72 @@
+name: Windows portable release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portable-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  portable:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      NO_UPDATE_NOTIFIER: '1'
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check tag matches package version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:RELEASE_TAG -ne "v$version") { throw 'The release tag must match package.json version.' }
+      - run: npm ci
+      - run: npm test
+      - run: npm run pack
+      - name: Test the packaged desktop application
+        env:
+          TEST_PACKAGED: '1'
+        run: npm run test:desktop
+      - name: Test the portable executable in another directory
+        run: node tests/portable.mjs
+      - name: Write checksums and release notes
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem release/FlightArchive-Portable-*.exe | Select-Object -First 1
+          if (-not $exe) { throw 'Portable executable is missing.' }
+          $hash = (Get-FileHash -LiteralPath $exe.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($exe.Name)" | Set-Content release/SHA256SUMS.txt -Encoding utf8
+          @'
+          Portable-приложение «Архив рейсов» для Windows x64.
+
+          Скопируйте EXE в отдельную папку с правом записи и запустите. Установка и интернет не нужны.
+          Прогресс сохраняется рядом с EXE. Для переноса текущей игры копируйте всю папку.
+
+          Тестовый пароль и ответы: 1111. Код отмены уничтожения: SHA-2026.
+          Панель прогресса: наберите ТЧша2026. Видео пока заменено демонстрационной заставкой.
+
+          Веб-версия: https://demosha2026.storkyproduct.ru
+          '@ | Set-Content release/RELEASE_NOTES.md -Encoding utf8
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem release/FlightArchive-Portable-*.exe | Select-Object -First 1
+          gh release view $env:RELEASE_TAG --json tagName *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:RELEASE_TAG $exe.FullName release/SHA256SUMS.txt --clobber
+          } else {
+            gh release create $env:RELEASE_TAG $exe.FullName release/SHA256SUMS.txt --verify-tag --title "Архив рейсов $env:RELEASE_TAG" --notes-file release/RELEASE_NOTES.md
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publication failed.' }
