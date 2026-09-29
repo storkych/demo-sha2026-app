@@ -24,4 +24,16 @@
 .cancel-form .error:empty{display:none}
 @media(max-height:800px){.explorer-body .files{padding:12px;gap:10px}.explorer-body .file{padding:7px;gap:7px}.flight>svg{height:44px;width:38px;margin:3px 0}.file>.folder-art{margin:0;transform:scale(.8);transform-origin:top center;height:64px}.folder:hover:not(:disabled) .folder-art{transform:scale(.8) translateY(-4px)}}
 @media(max-height:700px){.archive-stage{padding:12px 0}.archive-heading .eyebrow{display:none}.archive-heading h1{font-size:25px}.archive-heading>.muted{margin-bottom:12px}.explorer .windowbar{padding:12px}.explorer .breadcrumbs{padding:7px 12px}.explorer .explorer-footer{padding:8px 12px}.cancel-form{margin-top:10px;padding:10px 12px}}
+.code-unlocked{z-index:6}
+.timer-controls{display:flex;align-items:center;gap:22px;min-width:0}
+.timer-cancel{position:relative;width:250px;padding-left:20px;border-left:1px solid #efb45455;animation:code-reveal .65s cubic-bezier(.2,.8,.2,1) both}
+.timer-cancel label{font-size:10px;color:#efd19a;margin:0 0 6px}
+.timer-cancel>div{display:flex;gap:6px}
+.timer-cancel input{width:100%;min-width:0;padding:10px 12px;font-size:13px;height:38px}
+.timer-cancel .primary{padding:9px 12px;flex-shrink:0;height:38px;min-height:38px}
+.timer-cancel .error:empty{display:none}
+.timer-cancel .error{position:absolute;top:100%;right:0;width:250px;margin:8px 0 0;padding:10px 12px;background:#2e181b;border:1px solid #a15050;border-radius:4px;font-size:11px;box-shadow:0 8px 24px #0006}
+@keyframes code-reveal{from{opacity:0;transform:translateX(18px);filter:blur(3px)}to{opacity:1;transform:translateX(0);filter:blur(0)}}
+@media(max-width:1100px){.code-unlocked .brand small{display:none}.code-unlocked .timer{display:grid;gap:3px}.code-unlocked .timer>svg{display:none}.code-unlocked .test-code{display:flex;gap:5px;padding:0;margin:0;border:0;font-size:8px}.code-unlocked .test-code b{margin:0;font-size:9px}.timer-controls{gap:15px}.timer-cancel{width:230px;padding-left:15px}}
+@media(max-width:650px){.code-unlocked .brand{display:none}.code-unlocked .timer-controls{width:100%;gap:12px;justify-content:space-between}.timer-cancel{width:210px;padding-left:12px}.timer-cancel label{font-size:9px}.timer-cancel input{font-size:12px;padding:9px}.timer-cancel .primary{padding:9px}.code-unlocked .timer small{font-size:6px;letter-spacing:.4px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}

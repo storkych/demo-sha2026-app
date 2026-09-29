@@ -38,19 +38,25 @@ try {
   if(r===2){await page.getByRole('button',{name:'Архив Открыть архив'}).click();assert.ok(await page.getByRole('button',{name:'Север Доступ закрыт'}).isDisabled());assert.equal(await page.getByLabel('Код отмены уничтожения').count(),0);}
   if(r===0){await page.getByRole('button',{name:'Горизонт Авиакомпания'}).click();assert.ok(await page.getByRole('button',{name:'Реестр 02 Доступ закрыт'}).isDisabled());assert.equal(await page.locator('.flight').count(),0);}
  }
+ // Full access reveals the header control in every room, without opening the archive.
+ for(const name of roomNames) {
+  await page.getByRole('button',{name:new RegExp(name+' ')}).click();
+  assert.equal(await page.locator('.topbar #cancel').count(),1);
+ }
+ await page.getByRole('button',{name:/Финальный блок/}).click();
  await page.getByRole('button',{name:'Реестр 02 Список рейсов'}).click();
  await page.getByText('SHA-2026',{exact:true}).last().waitFor();
  // The cancellation controls must be on screen without Playwright auto-scrolling.
  // Check the expanded archive tree at desktop, small laptop and mobile sizes.
  for(const viewport of [{width:1440,height:900},{width:1366,height:768},{width:1024,height:600},{width:390,height:844},{width:390,height:600}]) {
   await page.setViewportSize(viewport);
-  for(const selector of ['#cancel','.cancel-form button']) {
+  for(const selector of ['#cancel','.timer-cancel button']) {
    const geometry=await page.locator(selector).evaluate(element=>{
     const rect=element.getBoundingClientRect();
     const nav=document.querySelector('.bottom-nav').getBoundingClientRect();
     const topbar=document.querySelector('.topbar').getBoundingClientRect();
     const hit=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);
-    return {visible:rect.top>=topbar.bottom&&rect.bottom<=nav.top&&rect.left>=0&&rect.right<=innerWidth,unobstructed:element.contains(hit)};
+    return {visible:rect.top>=topbar.top&&rect.bottom<=topbar.bottom&&rect.bottom<=nav.top&&rect.left>=0&&rect.right<=innerWidth,unobstructed:element.contains(hit)};
    });
    assert.ok(geometry.visible&&geometry.unobstructed,`${selector} is clipped or covered at ${viewport.width}x${viewport.height}`);
   }
@@ -71,6 +77,7 @@ try {
  assert.equal(await page.getByLabel('Код отмены уничтожения').count(),0);
  await page.evaluate(() => { for (const key of 'ТЧша2026') window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })); });
  await page.getByRole('checkbox').first().check();await page.keyboard.press('Escape');
+ await page.getByRole('button',{name:/Кабина пилота /}).click();
  await page.getByLabel('Код отмены уничтожения').fill('SHA-2026');await page.getByRole('button',{name:'Остановить таймер'}).click();
  await page.getByRole('heading',{name:'Данные сохранены'}).waitFor();
  await page.reload();await page.getByRole('heading',{name:'Данные сохранены'}).waitFor();
