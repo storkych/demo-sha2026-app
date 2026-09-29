@@ -7,6 +7,7 @@ Production: https://demosha2026.storkyproduct.ru
 - Tag `vX.Y.Z`: Windows CI checks the version, builds the portable EXE, tests the packaged app and a copied standalone EXE, then publishes the EXE and SHA256 checksum in GitHub Releases.
 - To release the next version: update `package.json` and `package-lock.json`, push `main`, create the matching tag, then push that tag.
 - `Web CI and deployment` also supports manual runs from Actions on `main`.
+- `Windows portable release` can be run manually from `main` with an existing version tag; it checks out and builds that tag rather than whatever happens to be at `main`.
 
 ## Server isolation
 

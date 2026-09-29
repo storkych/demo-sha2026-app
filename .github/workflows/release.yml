@@ -3,12 +3,18 @@ name: Windows portable release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to build (for example v1.0.0)
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 concurrency:
-  group: portable-${{ github.ref }}
+  group: portable-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -18,9 +24,11 @@ jobs:
     env:
       NO_UPDATE_NOTIFIER: '1'
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      RELEASE_TAG: ${{ github.ref_name }}
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '22'
