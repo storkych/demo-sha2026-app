@@ -10,5 +10,6 @@ const installedVersion = fs.existsSync(path.join(electronDist, 'version'))
   : null;
 build({
   targets: Platform.WINDOWS.createTarget('portable', Arch.x64),
+  publish: 'never',
   config: installedVersion === version ? { electronDist } : {},
 }).catch(error => { console.error(error); process.exitCode = 1; });
