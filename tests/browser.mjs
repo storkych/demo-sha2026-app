@@ -40,6 +40,22 @@ try {
  }
  await page.getByRole('button',{name:'Реестр 02 Список рейсов'}).click();
  await page.getByText('SHA-2026',{exact:true}).last().waitFor();
+ // The cancellation controls must be on screen without Playwright auto-scrolling.
+ // Check the expanded archive tree at desktop, small laptop and mobile sizes.
+ for(const viewport of [{width:1440,height:900},{width:1366,height:768},{width:1024,height:600},{width:390,height:844},{width:390,height:600}]) {
+  await page.setViewportSize(viewport);
+  for(const selector of ['#cancel','.cancel-form button']) {
+   const geometry=await page.locator(selector).evaluate(element=>{
+    const rect=element.getBoundingClientRect();
+    const nav=document.querySelector('.bottom-nav').getBoundingClientRect();
+    const topbar=document.querySelector('.topbar').getBoundingClientRect();
+    const hit=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);
+    return {visible:rect.top>=topbar.bottom&&rect.bottom<=nav.top&&rect.left>=0&&rect.right<=innerWidth,unobstructed:element.contains(hit)};
+   });
+   assert.ok(geometry.visible&&geometry.unobstructed,`${selector} is clipped or covered at ${viewport.width}x${viewport.height}`);
+  }
+ }
+ await page.setViewportSize({width:1366,height:768});
  await page.screenshot({path:'test-results/archive.png'});
  await page.getByLabel('Код отмены уничтожения').fill('no');await page.getByRole('button',{name:'Остановить таймер'}).click();await page.getByText('Неверный код. Отсчёт продолжается.').waitFor();
  await page.reload();
