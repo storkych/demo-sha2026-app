@@ -1,5 +1,19 @@
 export const PASSWORD = '1111';
 export const SECRET = 'SHA-2026';
+// Accepted answers per puzzle, in room order: cockpit, cabin, baggage.
+export const ANSWERS = [
+  ['356.231'], ['4957'], ['запонки'],
+  ['3A67D25B'], ['бразилия'], ['сан-паулу', 'сан-паул'],
+  ['240710'], ['546079289349'], ['артём']
+];
+const LOOKALIKES = { а:'a', в:'b', с:'c', е:'e', к:'k', м:'m', н:'h', о:'o', р:'p', т:'t', х:'x' };
+export function normalizeAnswer(value) {
+  return String(value).toLowerCase().replace(/ё/g, 'е').replace(/,/g, '.').replace(/[\s\-–—]/g, '').replace(/[авсекмнорфтх]/g, ch => LOOKALIKES[ch] ?? ch);
+}
+export function checkAnswer(index, value) {
+  const given = normalizeAnswer(value);
+  return given !== '' && (ANSWERS[index] ?? []).some(answer => normalizeAnswer(answer) === given);
+}
 export const DURATION = 2 * 60 * 60 * 1000;
 export const initialState = () => ({ version: 1, phase: 'login', solved: Array(9).fill(false), deadline: null, stoppedAt: null });
 export function validState(v) {

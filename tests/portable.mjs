@@ -17,7 +17,7 @@ try{
  const page=browser.contexts()[0].pages()[0];
  await page.getByRole('heading',{name:'Доступ к системе'}).waitFor();
  await page.getByLabel('Пароль',{exact:true}).fill('1111');await page.getByRole('button',{name:'Войти в систему'}).click();
- await page.getByRole('button',{name:'Смотреть заставку'}).waitFor();
+ await page.locator('video, .video-placeholder').first().waitFor();
  await page.waitForFunction(async()=>{const value=await window.questStorage.read();return value?.phase==='video';});
  const saved=JSON.parse(await fs.readFile(path.join(dir,'quest-progress.json'),'utf8'));assert.equal(saved.phase,'video');
  const session=await browser.newBrowserCDPSession();

@@ -7,10 +7,10 @@ const options={args: process.env.TEST_PACKAGED?['--smoke-test']:['.','--smoke-te
 let app=await electron.launch(options);
 try{
  let page=await app.firstWindow();await page.getByRole('heading',{name:'Доступ к системе'}).waitFor();
- await page.getByLabel('Пароль',{exact:true}).fill('1111');await page.getByRole('button',{name:'Войти в систему'}).click();await page.getByRole('button',{name:'Смотреть заставку'}).waitFor();
+ await page.getByLabel('Пароль',{exact:true}).fill('1111');await page.getByRole('button',{name:'Войти в систему'}).click();await page.locator('video, .video-placeholder').first().waitFor();
  await page.waitForFunction(async()=>{const state=await window.questStorage.read();return state?.phase==='video';});
  const saved=JSON.parse(await fs.readFile(path.join(dir,'quest-progress.json'),'utf8'));assert.equal(saved.phase,'video');
- await app.close();app=await electron.launch(options);page=await app.firstWindow();await page.getByRole('button',{name:'Смотреть заставку'}).waitFor();
+ await app.close();app=await electron.launch(options);page=await app.firstWindow();await page.locator('video, .video-placeholder').first().waitFor();
  assert.equal(await page.locator('.backdrop').evaluate(e=>getComputedStyle(e).backgroundImage.includes('cockpit.png')),true);
  console.log('Desktop smoke passed: local assets, preload bridge, save beside executable, resume after restart.');
 }finally{await app.close();}

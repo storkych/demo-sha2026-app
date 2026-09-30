@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { ANSWERS } from '../src/engine.mjs';
 const browser=await chromium.launch({...(process.env.CI?{}:{channel:'chrome'}),headless:true});
 const page=await browser.newPage({viewport:{width:1440,height:900}});
 const failures=[];page.on('pageerror',error=>failures.push(error.message));
@@ -13,7 +14,8 @@ try {
  await page.screenshot({path:'test-results/login.png'});
  await page.getByLabel('Пароль',{exact:true}).fill('1111');
  await page.getByRole('button',{name:'Войти в систему'}).click();
- await page.getByRole('button',{name:'Смотреть заставку'}).click();
+ await page.locator('video, .video-placeholder').first().waitFor();
+ if(await page.locator('video').count())await page.locator('video').evaluate(v=>v.dispatchEvent(new Event('ended')));else await page.getByRole('button',{name:'Смотреть заставку'}).click();
  await page.getByRole('button',{name:'Enter — продолжить'}).waitFor({timeout:15000});
  const before=JSON.parse(await page.evaluate(()=>localStorage.getItem('flight-quest')));
  assert.equal(before.phase,'ready'); assert.ok(before.deadline>Date.now());
@@ -31,7 +33,7 @@ try {
   for(let i=0;i<3;i++){
    await page.locator('.hotspot').nth(i).click();
    if(r===2&&i===0){await page.getByLabel('Ваш ответ').fill('no');await page.getByRole('button',{name:'Проверить',exact:true}).click();await page.getByText('Неверный ответ. Попробуйте ещё раз.').waitFor();await page.screenshot({path:'test-results/puzzle.png'});}
-   await page.getByLabel('Ваш ответ').fill('1111');await page.getByRole('button',{name:'Проверить',exact:true}).click();
+   await page.getByLabel('Ваш ответ').fill(ANSWERS[r*3+i][0]);await page.getByRole('button',{name:'Проверить',exact:true}).click();
    await page.getByRole('dialog').waitFor({state:'hidden'});
   }
   await page.getByRole('button',{name:/Финальный блок/}).click();
@@ -80,6 +82,7 @@ try {
  await page.getByRole('button',{name:/Кабина пилота /}).click();
  await page.getByLabel('Код отмены уничтожения').fill('SHA-2026');await page.getByRole('button',{name:'Остановить таймер'}).click();
  await page.getByRole('heading',{name:'Данные сохранены'}).waitFor();
+ assert.equal(await page.locator('video.end-video').count(),1);
  await page.reload();await page.getByRole('heading',{name:'Данные сохранены'}).waitFor();
  // Expired state remains locked after restart, reset requires the host panel.
  await page.evaluate(()=>localStorage.setItem('flight-quest',JSON.stringify({version:1,phase:'playing',deadline:Date.now()-1,stoppedAt:null,solved:Array(9).fill(false)})));
