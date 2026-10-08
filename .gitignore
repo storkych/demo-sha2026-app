@@ -7,3 +7,7 @@ quest-progress.json
 build/*.zip
 __pycache__/
 *.pyc
+.env
+.env.*
+!.env.example
+.local/
