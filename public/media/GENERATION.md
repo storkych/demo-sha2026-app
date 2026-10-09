@@ -1,3 +1,17 @@
+# Game videos
+
+## Ending — 2026-10-09
+
+`outro.mp4` is the approved-format news montage: 1920×1080, H.264/AAC, approximately 65 seconds. The first eight seconds show Ignatiy packing and being escorted away by police, using two identity-matched generated stills with a slow camera push and police-light reflections. These are edited stills, not generated live-action motion.
+
+The following fictional news report uses a single continuous Russian female narration generated through Polza with `google/gemini-3.1-flash-tts-preview`, voice `Kore`. The full narration lasts 52.64 seconds and cost 2.53 RUB; a preliminary sample cost 1.07 RUB. The complete user-supplied story is retained. Independent speech recognition verified the Russian text. The narration is split only in pauses between complete sentences, with short red/navy broadcast wipes and quiet transition sounds. There are no digital glitches in the news portion.
+
+Photographs show Ignatiy, Vladlen, the cafe couple, and Ignatiy behind bars. Headline panels, chronological cards and a scrolling ticker are rendered locally for sharp text. The biological mother's identity is not illustrated with the adoptive mother's portrait. Present-day dated CCTV photographs are not used to represent the event fifteen years earlier.
+
+The user accepted this narrated-photo format after Gemini video generation rejected the initial requests. No rejected Gemini video clips are used. Stills were generated with the built-in imagegen tool. The second arrest still preserves the supplied apartment and Ignatiy references while showing two plain-uniformed officers calmly escorting him toward the open door, with the packed duffel in the foreground and red/blue light outside. No violence, injuries, text or brands.
+
+Local production records: `.local/media-production/outro-news/voice-full-request.json`, `voice-full-meta.json`, `transcript-full.json`, and `edit-timeline.json`. Rendering script: `.local/media-production/render_outro_news.py`. Image prompts and first arrest still: `.local/media-production/outro-gemini/image-prompts.json` and `arrest-start.png`; second still: `.local/media-production/outro-news/arrest-end.png`. Earlier ending is backed up under `.local/media-production/originals-before-crash/outro-before-news.mp4`. Credentials and local production records are excluded from Git.
+
 # Opening video: Ignatiy after the crash
 
 ## Current approved version — 2026-10-09
