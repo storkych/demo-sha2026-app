@@ -8,8 +8,14 @@ const version = require('electron/package.json').version;
 const installedVersion = fs.existsSync(path.join(electronDist, 'version'))
   ? fs.readFileSync(path.join(electronDist, 'version'), 'utf8').trim().replace(/^v/, '')
   : null;
+const platform = process.argv[2] || (process.platform === 'darwin' ? 'mac' : 'win');
+if (!['mac', 'win'].includes(platform)) throw new Error('Choose mac or win as the packaging platform.');
+const mac = platform === 'mac';
 build({
-  targets: Platform.WINDOWS.createTarget('portable', Arch.x64),
+  targets: mac
+    ? Platform.MAC.createTarget(['dmg', 'zip'], Arch.universal)
+    : Platform.WINDOWS.createTarget('portable', Arch.x64),
   publish: 'never',
-  config: installedVersion === version ? { electronDist } : {},
+  // A universal Mac app needs both Electron architectures, not the host-only runtime.
+  config: !mac && installedVersion === version ? { electronDist } : {},
 }).catch(error => { console.error(error); process.exitCode = 1; });

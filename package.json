@@ -1,6 +1,6 @@
 {
   "name": "flight-archive-quest",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "description": "Portable aviation quest",
   "author": "Quest Team",
@@ -11,6 +11,7 @@
     "test": "node --test tests/*.test.mjs",
     "desktop": "npm run build && electron .",
     "pack": "npm run build && node scripts/package.cjs",
+    "pack:mac": "npm run build && node scripts/package.cjs mac",
     "test:browser": "node tests/browser.mjs",
     "test:desktop": "node tests/desktop.mjs"
   },
@@ -44,6 +45,17 @@
       "target": "portable",
       "signAndEditExecutable": false,
       "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.games",
+      "identity": "-",
+      "notarize": false,
+      "icon": "build/icon.png",
+      "artifactName": "FlightArchive-macOS-${version}-${arch}.${ext}"
     },
     "artifactName": "FlightArchive-Portable-${version}.${ext}"
   }

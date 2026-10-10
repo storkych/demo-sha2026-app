@@ -1,4 +1,4 @@
-name: Windows portable release
+name: Desktop releases
 
 on:
   push:
@@ -6,25 +6,37 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing version tag to build (for example v1.0.0)
+        description: Existing version tag to build (for example v1.0.7)
         required: true
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: portable-${{ inputs.tag || github.ref }}
+  group: desktop-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+  NO_UPDATE_NOTIFIER: '1'
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
 jobs:
-  portable:
-    runs-on: windows-latest
-    timeout-minutes: 25
-    env:
-      NO_UPDATE_NOTIFIER: '1'
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+  build:
+    name: Build and test ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            runner: windows-latest
+            command: pack
+          - platform: macos
+            runner: macos-latest
+            command: pack:mac
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -34,52 +46,68 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Check tag matches package version
-        shell: pwsh
-        run: |
-          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          if ($env:RELEASE_TAG -ne "v$version") { throw 'The release tag must match package.json version.' }
+        shell: bash
+        run: node -e 'if (process.env.RELEASE_TAG !== "v" + require("./package.json").version) throw new Error("The release tag must match package.json version.")'
       - run: npm ci
       - run: npm test
-      - run: npm run pack
+      - run: npm run ${{ matrix.command }}
       - name: Test the packaged desktop application
         env:
           TEST_PACKAGED: '1'
         run: npm run test:desktop
       - name: Test the portable executable in another directory
+        if: matrix.platform == 'windows'
         run: node tests/portable.mjs
-      - name: Write checksums and release notes
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem release/FlightArchive-Portable-*.exe | Select-Object -First 1
-          if (-not $exe) { throw 'Portable executable is missing.' }
-          $hash = (Get-FileHash -LiteralPath $exe.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $($exe.Name)" | Set-Content release/SHA256SUMS.txt -Encoding utf8
-          @'
-          Portable-приложение «Архив рейсов» для Windows x64.
+      - name: Test universal Mac archives and read-only DMG startup
+        if: matrix.platform == 'macos'
+        run: node tests/macos.mjs
+      - name: Upload Windows executable
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: desktop-windows
+          path: release/FlightArchive-Portable-*.exe
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Mac installers
+        if: matrix.platform == 'macos'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: desktop-macos
+          path: |
+            release/FlightArchive-macOS-*-universal.dmg
+            release/FlightArchive-macOS-*-universal.zip
+          if-no-files-found: error
+          retention-days: 14
 
-          Скопируйте EXE в отдельную папку с правом записи и запустите. Установка и интернет не нужны.
-          Прогресс сохраняется рядом с EXE. Для переноса текущей игры копируйте всю папку.
-
-          Вход без пароля: кнопка «Войти в систему» сразу запускает видео.
-          Новые сцены самолёта после крушения и вступительное видеосообщение Игнатия.
-          Утверждённое вступление в 1080p с цифровыми помехами и новый финал: заставка «Срочный репортаж», русская озвучка и фоновая новостная музыка.
-          Вступительное и финальное видео на весь экран, без элементов плеера; по три повтора каждого.
-          Обновлена структура архива: три авиакомпании, девять направлений, 27 файлов.
-          Пароль отмены уничтожения: Игнатий Даванков. Поле разблокируется после открытия всех уровней доступа.
-          Панель прогресса: наберите ТЧша2026.
-
-          Веб-версия: https://demosha2026.storkyproduct.ru
-          '@ | Set-Content release/RELEASE_NOTES.md -Encoding utf8
+  publish:
+    name: Publish Windows and macOS together
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: desktop-*
+          merge-multiple: true
+          path: release
+      - name: Verify release files and write checksums
+        run: node scripts/release-files.cjs
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: pwsh
+        shell: bash
         run: |
-          $exe = Get-ChildItem release/FlightArchive-Portable-*.exe | Select-Object -First 1
-          gh release view $env:RELEASE_TAG --json tagName *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $env:RELEASE_TAG $exe.FullName release/SHA256SUMS.txt --clobber
-          } else {
-            gh release create $env:RELEASE_TAG $exe.FullName release/SHA256SUMS.txt --verify-tag --title "Архив рейсов $env:RELEASE_TAG" --notes-file release/RELEASE_NOTES.md
-          }
-          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publication failed.' }
+          if gh release view "$RELEASE_TAG" --json tagName > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release/*.exe release/*.dmg release/*.zip release/SHA256SUMS.txt --clobber
+          else
+            gh release create "$RELEASE_TAG" release/*.exe release/*.dmg release/*.zip release/SHA256SUMS.txt --verify-tag --title "Архив рейсов $RELEASE_TAG" --notes-file scripts/RELEASE_NOTES.md
+          fi

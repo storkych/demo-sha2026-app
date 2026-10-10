@@ -1,7 +1,11 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
-const dataDir = process.env.PORTABLE_EXECUTABLE_DIR || (app.isPackaged ? path.dirname(app.getPath('exe')) : app.getAppPath());
+const dataDir = process.env.FLIGHT_ARCHIVE_DATA_DIR || process.env.PORTABLE_EXECUTABLE_DIR ||
+  (process.platform === 'darwin'
+    ? path.join(app.getPath('appData'), 'FlightArchive')
+    : app.isPackaged ? path.dirname(app.getPath('exe')) : app.getAppPath());
+fs.mkdirSync(dataDir, { recursive: true });
 app.setPath('userData', path.join(dataDir, 'FlightArchiveData'));
 const savePath = path.join(dataDir, 'quest-progress.json');
 if (!app.requestSingleInstanceLock()) app.quit();

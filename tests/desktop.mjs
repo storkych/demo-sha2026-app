@@ -3,7 +3,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 const dir=path.resolve('test-results/desktop-'+Date.now());await fs.mkdir(dir,{recursive:true});
-const options={args: process.env.TEST_PACKAGED?['--smoke-test']:['.','--smoke-test'],env:{...process.env,PORTABLE_EXECUTABLE_DIR:dir},...(process.env.TEST_PACKAGED?{executablePath:path.resolve('release/win-unpacked/Flight Archive.exe')}:{})};
+const mac = process.platform === 'darwin';
+const packagedExecutable = mac
+ ? 'release/mac-universal/Flight Archive.app/Contents/MacOS/Flight Archive'
+ : 'release/win-unpacked/Flight Archive.exe';
+const options={args: process.env.TEST_PACKAGED?['--smoke-test']:['.','--smoke-test'],env:{...process.env,FLIGHT_ARCHIVE_DATA_DIR:dir},...(process.env.TEST_PACKAGED?{executablePath:path.resolve(packagedExecutable)}:{})};
 let app=await electron.launch(options);
 try{
  let page=await app.firstWindow();await page.getByRole('heading',{name:'Доступ к системе'}).waitFor();
@@ -12,5 +16,5 @@ try{
  const saved=JSON.parse(await fs.readFile(path.join(dir,'quest-progress.json'),'utf8'));assert.equal(saved.phase,'video');
  await app.close();app=await electron.launch(options);page=await app.firstWindow();await page.locator('video, .cinema-placeholder').first().waitFor();
  assert.equal(await page.locator('.backdrop').evaluate(e=>getComputedStyle(e).backgroundImage.includes('cockpit.png')),true);
- console.log('Desktop smoke passed: local assets, preload bridge, save beside executable, resume after restart.');
+ console.log('Desktop smoke passed: local assets, preload bridge, persistent progress, resume after restart.');
 }finally{await app.close();}
